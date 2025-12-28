@@ -2,12 +2,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from huggingface_hub import InferenceClient
 import time
-
+import os
 app = FastAPI()
 
 # 🚀 OFFICIAL WAY: Library khud URL manage karegi
-HF_TOKEN = "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"
-# Model wahi hai jo hum use kar rahe the
+HF_TOKEN = os.getenv("HF_TOKEN")# Model wahi hai jo hum use kar rahe the
 MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
 # Client initialize karein
