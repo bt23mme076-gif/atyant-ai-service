@@ -1,15 +1,22 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from huggingface_hub import InferenceClient
-import time
 import os
+from dotenv import load_dotenv
+
+# 🚀 STEP 1: Load environment variables correctly
+load_dotenv() 
+
 app = FastAPI()
 
-# 🚀 OFFICIAL WAY: Library khud URL manage karegi
-HF_TOKEN = os.getenv("HF_TOKEN")# Model wahi hai jo hum use kar rahe the
+# 🚀 STEP 2: Initialize Hugging Face Client
+# 'HF_TOKEN' aapki .env file se aayega
+HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
-# Client initialize karein
+if not HF_TOKEN:
+    print("❌ WARNING: HF_TOKEN not found in environment variables!")
+
 client = InferenceClient(api_key=HF_TOKEN)
 
 class TextData(BaseModel):
@@ -18,30 +25,35 @@ class TextData(BaseModel):
 @app.post("/embed")
 async def get_embedding(data: TextData):
     try:
-        # 🚀 Feature Extraction call (Ye embeddings generate karta hai)
-        # Isme '404 Not Found' aane ka chance 0% hai
+        # 🚀 Generate Embeddings
         vector = client.feature_extraction(data.text, model=MODEL_ID)
         
-        # Convert to list (Hugging Face Hub results are often numpy-like)
+        # Convert to list if it's a numpy-like object
         if hasattr(vector, "tolist"):
             vector = vector.tolist()
         
-        # 🚀 CLEANING: Agar nested list [[...]] hai toh flat karke [...] bhejta hai
+        # 🚀 CLEANING: Ensure it's a flat list [...] not [[...]]
         if isinstance(vector, list) and len(vector) > 0 and isinstance(vector[0], list):
             vector = vector[0]
             
-        print("✅ Vector generated successfully using Official Library!")
+        print(f"✅ Vector generated for: {data.text[:30]}...")
         return {"embedding": vector}
 
     except Exception as e:
-        # Agar model load ho raha ho (timeout error)
-        if "503" in str(e) or "loading" in str(e).lower():
-            print("⏳ Model is loading... wait a few seconds and try again.")
-            return {"error": "Model is loading", "details": "Please retry in 10-15 seconds"}
+        error_msg = str(e)
+        # Handling Model Loading State (503)
+        if "503" in error_msg or "loading" in error_msg.lower():
+            print("⏳ Model is loading on Hugging Face...")
+            return {"error": "Model is loading", "details": "Please retry in 10 seconds"}
         
-        print(f"❌ Python Error: {str(e)}")
-        return {"error": str(e)}
+        # Handling Unauthorized (401)
+        if "401" in error_msg:
+            print("❌ Token Error: Unauthorized. Check your HF_TOKEN.")
+            return {"error": "Unauthorized", "details": "Invalid or expired Hugging Face token"}
+
+        print(f"❌ AI Error: {error_msg}")
+        return {"error": error_msg}
 
 @app.get("/")
 def home():
-    return {"message": "Atyant AI Service (Official Hub Library) is Live!"}
+    return {"message": "Atyant AI Service is Online 🚀"}
