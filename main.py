@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from huggingface_hub import InferenceClient
 import os
@@ -8,6 +9,21 @@ from dotenv import load_dotenv
 load_dotenv() 
 
 app = FastAPI()
+
+# 🚀 CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://atyant.in",
+        "https://www.atyant.in",
+        "https://api.atyant.in",
+        "http://localhost:3000",
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 🚀 STEP 2: Initialize Hugging Face Client
 # 'HF_TOKEN' aapki .env file se aayega
